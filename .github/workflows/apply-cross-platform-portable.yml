@@ -1,0 +1,71 @@
+name: Apply cross-platform portable patch
+
+on:
+  push:
+    branches:
+      - feature/macos-support
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/macos-support
+          fetch-depth: 0
+
+      - name: Apply targeted app.py changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app.py')
+          text = path.read_text(encoding='utf-8')
+
+          old_import = 'from ui_modern import SplashScreen, PdfPreviewWindow, make_preview_temp_path, resource_path\n'
+          new_import = old_import + 'from platform_utils import open_path\n'
+          if 'from platform_utils import open_path\n' not in text:
+              if old_import not in text:
+                  raise SystemExit('Expected ui_modern import not found')
+              text = text.replace(old_import, new_import, 1)
+
+          old_appdir = '''def application_dir() -> Path:\n    """Return the folder containing the executable or source files."""\n    if getattr(sys, "frozen", False):\n        return Path(sys.executable).resolve().parent\n    return Path(__file__).resolve().parent\n'''
+          new_appdir = '''def application_dir() -> Path:\n    """Return the portable application root on Windows, macOS, or Linux."""\n    portable_root = os.environ.get("FCV_PORTABLE_ROOT")\n    if portable_root:\n        return Path(portable_root).expanduser().resolve()\n\n    if getattr(sys, "frozen", False):\n        executable = Path(sys.executable).resolve()\n\n        # macOS .app bundles place the executable inside AppName.app/Contents/MacOS.\n        if sys.platform == "darwin":\n            for parent in executable.parents:\n                if parent.suffix.lower() == ".app":\n                    return parent.parent\n\n        # Windows and Linux portable executables live directly in the portable root.\n        return executable.parent\n\n    # Running directly from Python source.\n    return Path(__file__).resolve().parent\n'''
+          if old_appdir in text:
+              text = text.replace(old_appdir, new_appdir, 1)
+          elif new_appdir not in text:
+              raise SystemExit('Expected application_dir block not found')
+
+          old_open = '''    def open_resume_folder(self):\n        path = str(portable_resume_dir())\n        if sys.platform.startswith("win"):\n            os.startfile(path)\n        else:\n            os.system(f'xdg-open "{path}" >/dev/null 2>&1 &')\n\n    def open_data_folder(self):\n        path = str(portable_data_dir())\n        if sys.platform.startswith("win"):\n            os.startfile(path)\n        else:\n            os.system(f'xdg-open "{path}" >/dev/null 2>&1 &')\n'''
+          new_open = '''    def open_resume_folder(self):\n        try:\n            open_path(portable_resume_dir())\n        except Exception as exc:\n            messagebox.showerror(\n                "Open Folder",\n                f"Unable to open the Resume folder.\\n\\n{exc}",\n                parent=self,\n            )\n\n    def open_data_folder(self):\n        try:\n            open_path(portable_data_dir())\n        except Exception as exc:\n            messagebox.showerror(\n                "Open Folder",\n                f"Unable to open the data folder.\\n\\n{exc}",\n                parent=self,\n            )\n'''
+          if old_open in text:
+              text = text.replace(old_open, new_open, 1)
+          elif new_open not in text:
+              raise SystemExit('Expected folder-opening block not found')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Verify source and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile app.py platform_utils.py
+          rm -rf __pycache__
+          grep -q 'from platform_utils import open_path' app.py
+          grep -q 'FCV_PORTABLE_ROOT' app.py
+          grep -q 'subprocess.Popen\(\["open", target\]\)' platform_utils.py
+          grep -q 'subprocess.Popen\(\["xdg-open", target\]\)' platform_utils.py
+          rm -f .github/workflows/apply-cross-platform-portable.yml
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add cross-platform portable path handling"
+          git push origin HEAD:feature/macos-support
