@@ -22,6 +22,7 @@ from app_config import APP_NAME, APP_VERSION, GITHUB_REPOSITORY
 from cv_generator import generate_cv
 from date_utils import normalize_date, date_sort_key
 from ui_modern import SplashScreen, PdfPreviewWindow, make_preview_temp_path, resource_path
+from platform_utils import open_path
 
 DATE_FIELDS = {"start_date", "end_date", "graduation_date", "attended_date", "expiration_date", "earned_date", "testimony_date", "achievement_date"}
 YEAR_FIELDS = {"start_year", "end_year"}
@@ -76,9 +77,19 @@ TABLE_CONFIG = {
 
 
 def application_dir() -> Path:
-    """Return the folder containing the executable or source files."""
+    """Return the portable application root on Windows, macOS, or Linux."""
+    portable_root = os.environ.get("FCV_PORTABLE_ROOT")
+    if portable_root:
+        return Path(portable_root).expanduser().resolve()
+
     if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
+        executable = Path(sys.executable).resolve()
+        if sys.platform == "darwin":
+            for parent in executable.parents:
+                if parent.suffix.lower() == ".app":
+                    return parent.parent
+        return executable.parent
+
     return Path(__file__).resolve().parent
 
 
@@ -1062,18 +1073,16 @@ Do not rely on a flash drive as the only copy of professional records. Maintain 
             messagebox.showerror("Restore Error", str(exc))
 
     def open_resume_folder(self):
-        path = str(portable_resume_dir())
-        if sys.platform.startswith("win"):
-            os.startfile(path)
-        else:
-            os.system(f'xdg-open "{path}" >/dev/null 2>&1 &')
+        try:
+            open_path(portable_resume_dir())
+        except Exception as exc:
+            messagebox.showerror("Open Folder", f"Unable to open the Resume folder.\n\n{exc}", parent=self)
 
     def open_data_folder(self):
-        path = str(portable_data_dir())
-        if sys.platform.startswith("win"):
-            os.startfile(path)
-        else:
-            os.system(f'xdg-open "{path}" >/dev/null 2>&1 &')
+        try:
+            open_path(portable_data_dir())
+        except Exception as exc:
+            messagebox.showerror("Open Folder", f"Unable to open the data folder.\n\n{exc}", parent=self)
 
     def _on_tab_changed(self, _event=None):
         """Keep the status bar relevant to the currently selected tab."""
