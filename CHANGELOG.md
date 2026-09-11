@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.5.0
+
+- Added portable supporting-document attachments for Employment, Education, Training, Certifications, Teaching, Organizations, Skills & Tools, and Achievements.
+- Added document selection to Add and Edit record dialogs, including support for multiple documents per record.
+- Stored attachments directly inside the SQLite database so normal database backups preserve supporting files.
+- Added a Document preview column to supported record tabs.
+- Added thumbnail previews for PDF and image attachments and file-type previews for other document formats.
+- Added an enlarged document viewer with an option to open the original attachment in its associated application.
+- Added automatic attachment cleanup when a linked record or profile is deleted.
+- Added **Export Documents ZIP...** to Generate CV for exporting all documents belonging to the active profile.
+- Added `manifest.csv` to document ZIP exports with record type, record ID, original filename, file size, and SHA-256 hash.
+
 ## 2.4.0
 
 - Added click-to-sort column headers to record tabs.
@@ -60,4 +72,3 @@
 - Retained professional Inno Setup installer branding, license, and welcome artwork.
 - Removed the ttkbootstrap dependency so Light mode uses the original v2.2.0 Windows ttk appearance.
 - Preserved all database, profile, portable-storage, Word/PDF rendering, sorting, and update-checking behavior.
-
