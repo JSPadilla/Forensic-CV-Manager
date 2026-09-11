@@ -8,6 +8,7 @@ import webbrowser
 import json
 from datetime import date, datetime
 import tkinter as tk
+import tkinter.font as tkfont
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import Any
@@ -329,9 +330,59 @@ class RecordsTab(ttk.Frame):
             self.after(1, lambda: AttachmentViewer(self, self.db, self.table, int(iid)))
 
     def _double_click(self, event):
+        region = self.tree.identify_region(event.x, event.y)
+        if region == "separator":
+            column = self._column_name_from_tree_id(self.tree.identify_column(event.x))
+            if column:
+                self._autosize_column(column)
+            return "break"
+        if region not in {"cell", "tree"}:
+            return "break"
         if self.attachments_enabled and self.tree.identify_column(event.x) == "#0":
-            return
+            return "break"
         self.edit()
+
+    def _column_name_from_tree_id(self, column_id: str) -> str | None:
+        if column_id == "#0":
+            return "#0" if self.attachments_enabled else None
+        if column_id.startswith("#"):
+            try:
+                index = int(column_id[1:]) - 1
+                columns = self.config_data["display"]
+                if 0 <= index < len(columns):
+                    return columns[index]
+            except (TypeError, ValueError):
+                return None
+        return column_id if column_id in self.config_data["display"] else None
+
+    def _autosize_column(self, column: str) -> None:
+        """Size one visible column to its heading and currently displayed data."""
+        try:
+            body_font = tkfont.nametofont("TkDefaultFont")
+            heading_font = tkfont.nametofont("TkHeadingFont")
+        except tk.TclError:
+            body_font = tkfont.Font(root=self)
+            heading_font = tkfont.Font(root=self, weight="bold")
+
+        if column == "#0":
+            heading = "Document"
+            values = [self.tree.item(iid, "text") for iid in self.tree.get_children("")]
+            minimum = 54
+        else:
+            heading = self._heading_text(column)
+            values = [self.tree.set(iid, column) for iid in self.tree.get_children("")]
+            minimum = 70
+
+        width = heading_font.measure(str(heading)) + 28
+        for value in values:
+            width = max(width, body_font.measure(str(value or "")) + 28)
+        self.tree.column(column, width=max(minimum, width))
+
+    def _autosize_all_columns(self) -> None:
+        if self.attachments_enabled:
+            self._autosize_column("#0")
+        for column in self.config_data["display"]:
+            self._autosize_column(column)
 
     def _heading_text(self, column: str) -> str:
         label = column.replace("_", " ").title()
@@ -431,6 +482,7 @@ class RecordsTab(ttk.Frame):
                 self.tree.insert("", "end", iid=iid, values=values)
             if iid in selected:
                 self.tree.selection_add(iid)
+        self._autosize_all_columns()
         self.status_callback(f"{self.config_data['label']}: {len(self.tree.get_children())} record(s)")
 
     def selected_id(self):
@@ -538,6 +590,7 @@ class App(tk.Tk):
         except tk.TclError:
             pass
         style.configure("Treeview", rowheight=26)
+        style.configure("Treeview.Heading", font=("Segoe UI", 9, "bold"))
         style.configure("Title.TLabel", font=("Segoe UI", 18, "bold"))
         style.configure("Metric.TLabel", font=("Segoe UI", 20, "bold"), foreground="#1f4e79")
 
@@ -568,7 +621,7 @@ class App(tk.Tk):
         style.configure("TNotebook.Tab", background=panel, foreground=muted, padding=(10, 5))
         style.map("TNotebook.Tab", background=[("selected", field)], foreground=[("selected", fg)])
         style.configure("Treeview", rowheight=26, background=field, fieldbackground=field, foreground=fg)
-        style.configure("Treeview.Heading", background=panel, foreground=fg)
+        style.configure("Treeview.Heading", background=panel, foreground=fg, font=("Segoe UI", 9, "bold"))
         style.map("Treeview", background=[("selected", "#3d6382")], foreground=[("selected", "#ffffff")])
         style.configure("Title.TLabel", font=("Segoe UI", 18, "bold"), background=bg, foreground=fg)
         style.configure("Metric.TLabel", font=("Segoe UI", 20, "bold"), background=bg, foreground=accent)
