@@ -1,4 +1,4 @@
-# Forensic CV Manager 2.4.0
+# Forensic CV Manager 2.5.0
 
 Forensic CV Manager is a portable SQLite-backed desktop application for tracking professional qualifications and generating court-ready curricula vitae.
 
@@ -16,6 +16,11 @@ On first launch, `data/template.sqlite3` is copied to `data/forensic_cv.sqlite3`
 - Portable SQLite database beside the executable
 - Multiple independent examiner profiles
 - Create, edit, and delete individual records
+- Attach supporting documents to professional records
+- Document thumbnails/previews on supported record tabs
+- Integrated enlarged document viewer for PDF and image attachments
+- Open attached Office and other document types in their default application
+- Export all documents for the active profile to a ZIP archive with a SHA-256 manifest
 - Clear all records for the selected profile
 - Fictitious sample database and reusable sample-data command
 - Import/export a single profile as `.fcvprofile.json`
@@ -29,6 +34,27 @@ On first launch, `data/template.sqlite3` is copied to `data/forensic_cv.sqlite3`
 - Optional GitHub release update checker
 - Portable ZIP build and optional Inno Setup installer
 - Optional Authenticode signing hook
+
+## Record attachments
+
+Version 2.5.0 adds supporting-document storage to the following record categories:
+
+- Employment
+- Education
+- Training
+- Certifications
+- Teaching
+- Organizations
+- Skills & Tools
+- Achievements
+
+Use **Add Document...** in the Add or Edit dialog for a supported record. Multiple documents may be attached to the same record.
+
+Attachments are stored as BLOB data inside the portable SQLite database rather than as loose files. This keeps the supporting documents with the database during normal backup and portable use.
+
+Supported image and PDF attachments display a thumbnail in the **Document** column. Select the thumbnail to open the integrated enlarged viewer. Other document types display a file-type preview and can be opened with the operating system's associated application.
+
+On the **Generate CV** tab, select **Export Documents ZIP...** to export every supporting document for the active profile. The ZIP contains the documents organized by record type and a `manifest.csv` containing record information, file size, and SHA-256 hash values.
 
 ## Run from Python
 
@@ -93,8 +119,7 @@ The working database is:
 data\forensic_cv.sqlite3
 ```
 
-Back up that file regularly to a location separate from the flash drive.
-
+Because v2.5.0 stores attachments inside SQLite, normal database backups also preserve the attached documents. Back up the database regularly to a location separate from the flash drive.
 
 ## Version management
 
@@ -103,7 +128,6 @@ The release version is defined once in `version.py` using Semantic Versioning (`
 ## User manual
 
 Open **Help > User Manual** for instructions covering profiles, adding records, flexible dates, editing, deletion, CV generation, backups, and portable use. **Help > How to Add Records** opens directly to the record-entry instructions.
-
 
 ## Sorting Records
 
