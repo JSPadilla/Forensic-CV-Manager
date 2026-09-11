@@ -43,7 +43,7 @@ copy /Y "README.md" "dist\README.txt" >nul
 copy /Y "Sample_Generated_CV.docx" "dist\Sample_Generated_CV.docx" >nul
 copy /Y "Sample_Generated_CV.pdf" "dist\Sample_Generated_CV.pdf" >nul
 copy /Y "USER_MANUAL.md" "dist\USER_MANUAL.txt" >nul
-copy /Y "LICENSE.txt" "dist\LICENSE.txt" >nul
+copy /Y "LICENSE" "dist\LICENSE.txt" >nul
 
 rem Optional Authenticode signing. Set SIGN_PFX and SIGN_PASSWORD before building.
 echo [6/7] Checking code-signing configuration...
