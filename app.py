@@ -22,6 +22,11 @@ from app_config import APP_NAME, APP_VERSION, GITHUB_REPOSITORY
 from cv_generator import generate_cv
 from date_utils import normalize_date, date_sort_key
 from ui_modern import SplashScreen, PdfPreviewWindow, make_preview_temp_path, resource_path
+from attachments import (
+    ATTACHMENT_TABLES, AttachmentPicker, AttachmentViewer,
+    all_profile_attachments, ensure_attachment_schema, export_profile_documents,
+    get_attachment, list_attachments, thumbnail_photo,
+)
 
 DATE_FIELDS = {"start_date", "end_date", "graduation_date", "attended_date", "expiration_date", "earned_date", "testimony_date", "achievement_date"}
 YEAR_FIELDS = {"start_year", "end_year"}
@@ -180,6 +185,7 @@ class RecordDialog(tk.Toplevel):
         self.result = None
         self.vars: dict[str, Any] = {}
         self.widgets: dict[str, Any] = {}
+        self.attachment_picker = None
         self.columnconfigure(1, weight=1)
         row = 0
         for field in config["fields"]:
@@ -215,6 +221,12 @@ class RecordDialog(tk.Toplevel):
                 widget.grid(row=row, column=1, sticky="ew", padx=8, pady=5)
                 self.vars[name] = var
             self.widgets[name] = widget
+            row += 1
+        if table in ATTACHMENT_TABLES:
+            record_id = int(initial['id']) if initial and initial.get('id') else None
+            self.attachment_picker = AttachmentPicker(self, parent.db, table, record_id)
+            self.attachment_picker.grid(row=row, column=0, columnspan=2, sticky='nsew', padx=8, pady=8)
+            self.rowconfigure(row, weight=1)
             row += 1
         buttons = ttk.Frame(self)
         buttons.grid(row=row, column=0, columnspan=2, sticky="e", padx=8, pady=10)
@@ -279,7 +291,15 @@ class RecordsTab(ttk.Frame):
         ttk.Button(top, text="Delete", command=self.delete).pack(side="right", padx=3)
 
         cols = self.config_data["display"]
-        self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="browse")
+        self.attachments_enabled = self.table in ATTACHMENT_TABLES
+        self._thumbnail_refs = {}
+        if self.attachments_enabled:
+            ttk.Style(self).configure("Document.Treeview", rowheight=60)
+            self.tree = ttk.Treeview(self, columns=cols, show=("tree", "headings"), selectmode="browse", style="Document.Treeview")
+            self.tree.heading("#0", text="Document")
+            self.tree.column("#0", width=86, minwidth=72, stretch=False, anchor="center")
+        else:
+            self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="browse")
         for col in cols:
             self.tree.heading(
                 col,
@@ -296,8 +316,22 @@ class RecordsTab(ttk.Frame):
         self.tree.pack(side="left", fill="both", expand=True, padx=(8, 0), pady=(0, 8))
         y.pack(side="right", fill="y", padx=(0, 8), pady=(0, 8))
         x.pack(side="bottom", fill="x", padx=8)
-        self.tree.bind("<Double-1>", lambda e: self.edit())
+        if self.attachments_enabled:
+            self.tree.bind("<ButtonRelease-1>", self._document_click)
+        self.tree.bind("<Double-1>", self._double_click)
         self.refresh()
+
+    def _document_click(self, event):
+        if not self.attachments_enabled or self.tree.identify_column(event.x) != "#0":
+            return
+        iid = self.tree.identify_row(event.y)
+        if iid and list_attachments(self.db, self.table, int(iid)):
+            self.after(1, lambda: AttachmentViewer(self, self.db, self.table, int(iid)))
+
+    def _double_click(self, event):
+        if self.attachments_enabled and self.tree.identify_column(event.x) == "#0":
+            return
+        self.edit()
 
     def _heading_text(self, column: str) -> str:
         label = column.replace("_", " ").title()
@@ -372,6 +406,7 @@ class RecordsTab(ttk.Frame):
             )
             rows = populated + blanks
 
+        self._thumbnail_refs.clear()
         for row in rows:
             values = []
             for col in self.config_data["display"]:
@@ -380,7 +415,20 @@ class RecordsTab(ttk.Frame):
                     value = "Yes" if value else "No"
                 values.append("" if value is None else value)
             iid = str(row["id"])
-            self.tree.insert("", "end", iid=iid, values=values)
+            if self.attachments_enabled:
+                attachments = list_attachments(self.db, self.table, row["id"])
+                image = None
+                label = ""
+                if attachments:
+                    full = get_attachment(self.db, attachments[0]["id"])
+                    if full:
+                        image = thumbnail_photo(self, full)
+                        if image is not None:
+                            self._thumbnail_refs[iid] = image
+                    label = str(len(attachments)) if len(attachments) > 1 else ""
+                self.tree.insert("", "end", iid=iid, text=label, image=image or "", values=values)
+            else:
+                self.tree.insert("", "end", iid=iid, values=values)
             if iid in selected:
                 self.tree.selection_add(iid)
         self.status_callback(f"{self.config_data['label']}: {len(self.tree.get_children())} record(s)")
@@ -393,7 +441,9 @@ class RecordsTab(ttk.Frame):
         dlg = RecordDialog(self, self.table, self.config_data)
         self.wait_window(dlg)
         if dlg.result is not None:
-            self.db.insert_row(self.table, dlg.result)
+            row_id = self.db.insert_row(self.table, dlg.result)
+            if dlg.attachment_picker is not None:
+                dlg.attachment_picker.commit(row_id)
             self.refresh()
 
     def edit(self):
@@ -405,6 +455,8 @@ class RecordsTab(ttk.Frame):
         self.wait_window(dlg)
         if dlg.result is not None:
             self.db.update_row(self.table, row_id, dlg.result)
+            if dlg.attachment_picker is not None:
+                dlg.attachment_picker.commit(row_id)
             self.refresh()
 
     def delete(self):
@@ -434,6 +486,7 @@ class App(tk.Tk):
         self.db_path = prepare_portable_database()
         self.splash.step("Opening credential database…", 42)
         self.db = Database(self.db_path)
+        ensure_attachment_schema(self.db)
         seed(self.db)
         self.splash.step("Loading profiles and records…", 60)
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -992,6 +1045,7 @@ Do not rely on a flash drive as the only copy of professional records. Maintain 
         ttk.Button(actions, text="Generate Word CV...", command=lambda: self.generate("docx")).pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Preview & Save PDF...", command=self.preview_pdf).pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Generate Word + PDF", command=lambda: self.generate("both")).pack(side="left", padx=(0, 8))
+        ttk.Button(actions, text="Export Documents ZIP...", command=self.export_documents_zip).pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Open Resume Folder", command=self.open_resume_folder).pack(side="left")
 
     def preview_pdf(self):
@@ -1034,6 +1088,29 @@ Do not rely on a flash drive as the only copy of professional records. Maintain 
                 self.open_resume_folder()
         except Exception as exc:
             messagebox.showerror("Generation Error", str(exc))
+
+    def export_documents_zip(self):
+        profile = self.db.get_profile()
+        attachments = all_profile_attachments(self.db)
+        if not attachments:
+            messagebox.showinfo("Export Documents", "No documents are attached to the current profile.", parent=self)
+            return
+        base = (profile.get("preferred_name") or profile.get("full_name") or "Forensic").replace(" ", "_") + "_Documents.zip"
+        out = filedialog.asksaveasfilename(
+            title="Export Attached Documents",
+            defaultextension=".zip",
+            initialdir=str(portable_resume_dir()),
+            initialfile=base,
+            filetypes=[("ZIP Archive", "*.zip")],
+        )
+        if not out:
+            return
+        try:
+            count = export_profile_documents(self.db, out)
+            self.set_status(f"Exported {count} document(s): {out}")
+            messagebox.showinfo("Export Documents", f"Exported {count} attached document(s) to:\n\n{out}", parent=self)
+        except Exception as exc:
+            messagebox.showerror("Export Documents", str(exc), parent=self)
 
     def backup_db(self):
         out = filedialog.asksaveasfilename(title="Backup Database", defaultextension=".sqlite3", initialfile="forensic_cv_backup.sqlite3", filetypes=[("SQLite Database", "*.sqlite3"), ("All Files", "*.*")])
