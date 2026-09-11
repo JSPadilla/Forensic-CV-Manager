@@ -346,6 +346,7 @@ class AttachmentPicker(ttk.LabelFrame):
             messagebox.showerror("Open Document", str(exc), parent=self.winfo_toplevel())
 
     def commit(self, record_id: int) -> None:
+        """Persist staged changes without touching widgets after the dialog closes."""
         for attachment_id in self.removed_ids:
             delete_attachment(self.db, attachment_id)
         if self.pending:
@@ -353,7 +354,6 @@ class AttachmentPicker(ttk.LabelFrame):
         self.record_id = record_id
         self.pending.clear()
         self.removed_ids.clear()
-        self.refresh()
 
 
 class AttachmentViewer(tk.Toplevel):
