@@ -16,6 +16,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Apply source patch
         run: python dev_apply_2_5_0.py
+      - name: Correct generated newline escape
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('app.py')
+          text = path.read_text(encoding='utf-8')
+          bad = 'messagebox.showinfo("Export Documents", f"Exported {count} attached document(s) to:\n\n{out}", parent=self)'
+          good = 'messagebox.showinfo("Export Documents", f"Exported {count} attached document(s) to:\\n\\n{out}", parent=self)'
+          text = text.replace(bad, good)
+          path.write_text(text, encoding='utf-8')
+          PY
       - name: Validate Python syntax
         run: python -m py_compile app.py attachments.py version.py
       - name: Commit generated source changes
