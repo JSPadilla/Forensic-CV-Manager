@@ -22,7 +22,7 @@ SetupIconFile=assets\app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 WizardImageFile=assets\installer_wizard.bmp
 WizardSmallImageFile=assets\installer_small.bmp
-LicenseFile=LICENSE.txt
+LicenseFile=LICENSE
 InfoBeforeFile=INSTALLER_WELCOME.txt
 DisableProgramGroupPage=yes
 
