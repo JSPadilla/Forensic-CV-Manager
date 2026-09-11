@@ -1,0 +1,60 @@
+name: Compact document thumbnails
+
+on:
+  push:
+    branches:
+      - feature/2.5.0-document-attachments
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reduce list document preview size
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          attachments = Path('attachments.py')
+          text = attachments.read_text(encoding='utf-8')
+          old = 'def thumbnail_photo(master, attachment: dict[str, Any] | None, size: tuple[int, int] = (54, 54)):'
+          new = 'def thumbnail_photo(master, attachment: dict[str, Any] | None, size: tuple[int, int] = (27, 27)):'
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one thumbnail size target, found {text.count(old)}')
+          attachments.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          app = Path('app.py')
+          text = app.read_text(encoding='utf-8')
+          replacements = {
+              'ttk.Style(self).configure("Document.Treeview", rowheight=60)':
+                  'ttk.Style(self).configure("Document.Treeview", rowheight=34)',
+              'self.tree.column("#0", width=86, minwidth=72, stretch=False, anchor="center")':
+                  'self.tree.column("#0", width=54, minwidth=50, stretch=False, anchor="center")',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected one UI sizing target for {old!r}, found {text.count(old)}')
+              text = text.replace(old, new, 1)
+          app.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate Python syntax
+        run: python -m py_compile app.py attachments.py version.py
+
+      - name: Run attachment tests
+        run: |
+          python -m pip install -r requirements.txt
+          python -m unittest tests.test_attachments
+
+      - name: Commit compact preview sizing
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py attachments.py
+          git commit -m "Reduce document preview thumbnails by 50 percent"
+          git push origin HEAD:feature/2.5.0-document-attachments
