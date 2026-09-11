@@ -15,6 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Tk support
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+
       - name: Reduce list document preview size
         run: |
           python - <<'PY'
