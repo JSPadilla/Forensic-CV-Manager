@@ -1,0 +1,27 @@
+name: Apply v2.5.0 attachment patch
+
+on:
+  push:
+    branches:
+      - feature/2.5.0-document-attachments
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply source patch
+        run: python dev_apply_2_5_0.py
+      - name: Validate Python syntax
+        run: python -m py_compile app.py attachments.py version.py
+      - name: Commit generated source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py version.py
+          git commit -m "Integrate record document attachments for v2.5.0" || exit 0
+          git push origin HEAD:feature/2.5.0-document-attachments
