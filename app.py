@@ -294,10 +294,10 @@ class RecordsTab(ttk.Frame):
         self.attachments_enabled = self.table in ATTACHMENT_TABLES
         self._thumbnail_refs = {}
         if self.attachments_enabled:
-            ttk.Style(self).configure("Document.Treeview", rowheight=60)
+            ttk.Style(self).configure("Document.Treeview", rowheight=34)
             self.tree = ttk.Treeview(self, columns=cols, show=("tree", "headings"), selectmode="browse", style="Document.Treeview")
             self.tree.heading("#0", text="Document")
-            self.tree.column("#0", width=86, minwidth=72, stretch=False, anchor="center")
+            self.tree.column("#0", width=54, minwidth=50, stretch=False, anchor="center")
         else:
             self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="browse")
         for col in cols:

@@ -266,7 +266,7 @@ def preview_image(name: str, content: bytes, max_size: tuple[int, int]) -> Image
     return image
 
 
-def thumbnail_photo(master, attachment: dict[str, Any] | None, size: tuple[int, int] = (54, 54)):
+def thumbnail_photo(master, attachment: dict[str, Any] | None, size: tuple[int, int] = (27, 27)):
     if not attachment:
         return None
     image = preview_image(str(attachment["original_name"]), bytes(attachment["content"]), size)
