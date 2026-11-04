@@ -22,7 +22,7 @@ from update_checker import check_github_release
 from app_config import APP_NAME, APP_VERSION, GITHUB_REPOSITORY
 from cv_generator import generate_cv
 from date_utils import normalize_date, date_sort_key
-from ui_modern import SplashScreen, PdfPreviewWindow, make_preview_temp_path, resource_path
+from ui_modern import SplashScreen, PdfPreviewWindow, make_preview_temp_path, resource_path, apply_widget_theme
 from attachments import (
     ATTACHMENT_TABLES, AttachmentPicker, AttachmentViewer,
     all_profile_attachments, ensure_attachment_schema, export_profile_documents,
@@ -166,6 +166,7 @@ class ProfileNameDialog(tk.Toplevel):
         entry.focus_set()
         self.bind("<Return>", lambda e: self.save())
         self.bind("<Escape>", lambda e: self.destroy())
+        apply_widget_theme(self)
 
     def save(self):
         value = self.var.get().strip()
@@ -195,12 +196,6 @@ class RecordDialog(tk.Toplevel):
             value = "" if initial is None or initial.get(name) is None else initial.get(name)
             if kind == "text":
                 widget = tk.Text(self, width=65, height=5, wrap="word")
-                try:
-                    root = parent.winfo_toplevel()
-                    if getattr(root, "theme_name", "light") == "dark":
-                        widget.configure(bg="#313338", fg="#f2f3f5", insertbackground="#f2f3f5")
-                except Exception:
-                    pass
                 widget.insert("1.0", str(value))
                 widget.grid(row=row, column=1, sticky="nsew", padx=8, pady=5)
                 self.rowconfigure(row, weight=1)
@@ -235,6 +230,7 @@ class RecordDialog(tk.Toplevel):
         ttk.Button(buttons, text="Save", command=self.save).pack(side="right", padx=4)
         self.bind("<Escape>", lambda e: self.destroy())
         self.geometry("760x620")
+        apply_widget_theme(self)
 
     def save(self):
         result = {}
@@ -650,38 +646,63 @@ class App(tk.Tk):
         except tk.TclError:
             pass
         style.configure("Treeview", rowheight=26)
+        style.configure("Document.Treeview", rowheight=34)
         style.configure("Treeview.Heading", font=("Segoe UI", 9, "bold"))
         style.configure("Title.TLabel", font=("Segoe UI", 18, "bold"))
         style.configure("Metric.TLabel", font=("Segoe UI", 20, "bold"), foreground="#1f4e79")
 
     def _apply_dark_ttk_style(self):
         style = self.style
-        try:
-            style.theme_use("clam")
-        except tk.TclError:
-            pass
+        # Keep overrides out of the built-in light theme, including state maps.
+        if "forensic-dark" not in style.theme_names():
+            style.theme_create("forensic-dark", parent="clam")
+        style.theme_use("forensic-dark")
         bg = "#202225"
         panel = "#2b2d31"
         field = "#313338"
         fg = "#f2f3f5"
         muted = "#b5bac1"
         accent = "#6ea8d7"
+        hover = "#3a3d42"
+        selected = "#3d6382"
         self.configure(bg=bg)
         style.configure(".", background=bg, foreground=fg, fieldbackground=field)
+        style.map(".", background=[("disabled", bg), ("pressed", field), ("active", hover)],
+                  foreground=[("disabled", muted)])
         style.configure("TFrame", background=bg)
         style.configure("TLabel", background=bg, foreground=fg)
         style.configure("TLabelframe", background=bg, foreground=fg)
         style.configure("TLabelframe.Label", background=bg, foreground=fg)
         style.configure("TButton", background=panel, foreground=fg, padding=(8, 4))
-        style.map("TButton", background=[("active", "#3a3d42")])
+        style.map("TButton", background=[("disabled", panel), ("pressed", selected), ("active", hover)],
+                  foreground=[("disabled", muted), ("pressed", fg), ("active", fg)])
+        for control in ("TCheckbutton", "TRadiobutton"):
+            style.configure(control, background=bg, foreground=fg)
+            style.map(control, background=[("disabled", bg), ("active", hover)],
+                      foreground=[("disabled", muted), ("active", fg)],
+                      indicatorbackground=[("disabled", panel), ("pressed", hover)])
         style.configure("TEntry", fieldbackground=field, foreground=fg)
+        style.map("TEntry", background=[("disabled", panel), ("readonly", field)],
+                  fieldbackground=[("disabled", panel), ("readonly", field)],
+                  foreground=[("disabled", muted), ("readonly", fg)])
         style.configure("TCombobox", fieldbackground=field, foreground=fg, background=field)
-        style.map("TCombobox", fieldbackground=[("readonly", field)], foreground=[("readonly", fg)])
+        style.map("TCombobox", background=[("disabled", panel), ("pressed", selected), ("active", hover), ("readonly", field)],
+                  fieldbackground=[("disabled", panel), ("readonly", field)],
+                  foreground=[("disabled", muted), ("readonly", fg)],
+                  arrowcolor=[("disabled", muted), ("!disabled", fg)])
         style.configure("TNotebook", background=bg, borderwidth=0)
         style.configure("TNotebook.Tab", background=panel, foreground=muted, padding=(10, 5))
-        style.map("TNotebook.Tab", background=[("selected", field)], foreground=[("selected", fg)])
+        style.map("TNotebook.Tab", background=[("disabled", panel), ("selected", field), ("active", hover)],
+                  foreground=[("disabled", muted), ("selected", fg), ("active", fg)],
+                  lightcolor=[("selected", field), ("active", hover)])
         style.configure("Treeview", rowheight=26, background=field, fieldbackground=field, foreground=fg)
+        style.configure("Document.Treeview", rowheight=34)
         style.configure("Treeview.Heading", background=panel, foreground=fg, font=("Segoe UI", 9, "bold"))
+        style.map("Treeview.Heading", background=[("disabled", panel), ("pressed", selected), ("active", hover)],
+                  foreground=[("disabled", muted), ("pressed", fg), ("active", fg)])
+        style.configure("TScrollbar", background=panel, troughcolor=bg, arrowcolor=fg)
+        style.map("TScrollbar", background=[("disabled", panel), ("pressed", selected), ("active", hover)],
+                  arrowcolor=[("disabled", muted), ("!disabled", fg)])
         style.map("Treeview", background=[("selected", "#3d6382")], foreground=[("selected", "#ffffff")])
         style.configure("Title.TLabel", font=("Segoe UI", 18, "bold"), background=bg, foreground=fg)
         style.configure("Metric.TLabel", font=("Segoe UI", 20, "bold"), background=bg, foreground=accent)
@@ -701,29 +722,14 @@ class App(tk.Tk):
 
     def _apply_native_widget_theme(self):
         dark = self.theme_name == "dark"
-        text_bg, text_fg = (("#313338", "#f2f3f5") if dark else ("#ffffff", "#000000"))
         canvas_bg = "#2b2d31" if dark else "#ffffff"
-        self._theme_walk(self, text_bg, text_fg, canvas_bg)
+        apply_widget_theme(self, self.theme_name)
         if hasattr(self, "dashboard_chart"):
             try:
                 self.dashboard_chart.configure(background=canvas_bg)
                 self.refresh_dashboard()
             except Exception:
                 pass
-
-    def _theme_walk(self, widget, text_bg, text_fg, canvas_bg):
-        for child in widget.winfo_children():
-            if isinstance(child, tk.Text):
-                try:
-                    child.configure(bg=text_bg, fg=text_fg, insertbackground=text_fg)
-                except tk.TclError:
-                    pass
-            elif isinstance(child, tk.Canvas):
-                try:
-                    child.configure(background=canvas_bg)
-                except tk.TclError:
-                    pass
-            self._theme_walk(child, text_bg, text_fg, canvas_bg)
 
     def _menu(self):
         menu = tk.Menu(self)
@@ -791,7 +797,9 @@ class App(tk.Tk):
 3. Use the record tabs to add employment, education, training, certifications, testimony, teaching, organizations, skills, and achievements.
 4. Open Generate CV, select the sections, and create a Word or PDF document.
 
-The working database is stored in the data folder beside the application. Generated documents are stored in the Resume folder by default.""",
+The working database is stored in the data folder beside the application. Generated documents are stored in the Resume folder by default.
+
+Use Tools > Appearance to choose Light Mode or Dark Mode. Add/Edit dialogs, notes, document lists, and dropdowns follow the selected appearance, including dialogs that are already open.""",
             "Adding Records": """ADDING RECORDS
 
 1. Select the correct profile from Active Profile.
@@ -817,7 +825,7 @@ SORTING AND COLUMN WIDTHS
 
 Click a column heading to sort ascending; click it again to sort descending. The heading arrow shows the current direction. Dates sort chronologically, hours numerically, and text in natural order. Sorting changes only the displayed list and preserves the selected record and column widths.
 
-Columns fit their headings and data when a profile is loaded. Added or edited values can widen a column. Double-click the separator at the right edge of a heading to fit that column to its currently displayed values. The Document column also supports separator autosizing.
+Columns fit their headings and data when a profile is loaded. Added or edited values can widen a column. Double-click the separator at the right edge of a heading to fit that column to its currently displayed values. The Document column also supports separator autosizing. In Dark Mode, headings retain readable colors when hovered or pressed; switching back to Light Mode restores the original appearance.
 
 SUPPORTING DOCUMENTS
 
@@ -886,8 +894,7 @@ Do not rely on a flash drive as the only copy of professional records. Maintain 
                 selected_index = index
         book.select(selected_index)
         ttk.Button(outer, text="Close", command=manual.destroy).pack(anchor="e", pady=(10, 0))
-        if self.theme_name == "dark":
-            self._theme_walk(manual, "#313338", "#f2f3f5", "#2b2d31")
+        apply_widget_theme(manual)
 
     def refresh_profile_selector(self):
         self._profiles = self.db.list_profiles()
@@ -992,6 +999,7 @@ Do not rely on a flash drive as the only copy of professional records. Maintain 
         ttk.Button(buttons, text="Close", command=win.destroy).pack(side="right", padx=3)
         tree.bind("<Double-1>", lambda e: activate())
         refresh()
+        apply_widget_theme(win)
 
     def new_blank_profile(self):
         dialog = ProfileNameDialog(self, "New Blank Profile", "New Examiner")

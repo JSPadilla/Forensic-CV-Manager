@@ -1,8 +1,14 @@
-# Forensic CV Manager 2.5.1
+# Forensic CV Manager 2.5.2
 
 Forensic CV Manager is a portable SQLite-backed desktop application for tracking professional qualifications and generating court-ready curricula vitae.
 
-## What's new in 2.5.1
+## What's new in 2.5.2
+
+- Consistent Dark Mode for Add/Edit dialogs, notes, attachment lists, and dropdowns, including dialogs opened after changing appearance.
+- Readable dark hover and pressed colors for table headings and other interactive controls.
+- Light Mode restores its original theme colors when switching back. Compact thumbnails, sorting, and separator autosizing remain available.
+
+## Performance improvements introduced in 2.5.1
 
 - Faster record refreshes and column sorting through reuse of existing rows and cached document thumbnails.
 - Automatic dashboard updates after adding, editing, or deleting records, with refreshed totals when changing profiles.
@@ -156,7 +162,7 @@ Run the test suite from the repository folder:
 python -m unittest discover -s tests -v
 ```
 
-The GUI regression tests require Tk and a display. On Linux without a desktop, use `xvfb-run -a python -m unittest discover -s tests -v` with Xvfb installed. GitHub Actions runs these checks for main, feature branches, and pull requests to main.
+The GUI regression tests require Tk and a display. On Linux without a desktop, use `xvfb-run -a python -m unittest discover -s tests -v` with Xvfb installed. GitHub Actions runs these checks for pushes to main and pull requests to main; they can also be started manually. Feature pushes do not create duplicate runs. See [.github/ACTIONS_STORAGE_POLICY.md](.github/ACTIONS_STORAGE_POLICY.md) for the repository's development-artifact and release policy.
 
 To measure refreshes and sorting with synthetic records and documents:
 

@@ -15,6 +15,7 @@ import tkinter as tk
 from typing import Any, Iterable
 
 from PIL import Image, ImageDraw, ImageFont, ImageTk
+from ui_modern import apply_widget_theme
 
 try:
     import pymupdf
@@ -317,6 +318,7 @@ class AttachmentPicker(ttk.LabelFrame):
         ttk.Button(buttons, text="Remove", command=self.remove).pack(fill="x", pady=2)
         ttk.Button(buttons, text="Open", command=self.open_selected).pack(fill="x", pady=2)
         self.refresh()
+        apply_widget_theme(self)
 
     def _items(self):
         existing = [] if self.record_id is None else [a for a in list_attachments(self.db, self.table, self.record_id) if a["id"] not in self.removed_ids]
@@ -413,6 +415,7 @@ class AttachmentViewer(tk.Toplevel):
             self.render()
         else:
             self.name_var.set("No documents are attached to this record.")
+        apply_widget_theme(self)
 
     def selected(self):
         sel = self.listbox.curselection()
