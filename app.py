@@ -797,7 +797,9 @@ class App(tk.Tk):
 3. Use the record tabs to add employment, education, training, certifications, testimony, teaching, organizations, skills, and achievements.
 4. Open Generate CV, select the sections, and create a Word or PDF document.
 
-The working database is stored in the data folder beside the application. Generated documents are stored in the Resume folder by default.""",
+The working database is stored in the data folder beside the application. Generated documents are stored in the Resume folder by default.
+
+Use Tools > Appearance to choose Light Mode or Dark Mode. Add/Edit dialogs, notes, document lists, and dropdowns follow the selected appearance, including dialogs that are already open.""",
             "Adding Records": """ADDING RECORDS
 
 1. Select the correct profile from Active Profile.
@@ -823,7 +825,7 @@ SORTING AND COLUMN WIDTHS
 
 Click a column heading to sort ascending; click it again to sort descending. The heading arrow shows the current direction. Dates sort chronologically, hours numerically, and text in natural order. Sorting changes only the displayed list and preserves the selected record and column widths.
 
-Columns fit their headings and data when a profile is loaded. Added or edited values can widen a column. Double-click the separator at the right edge of a heading to fit that column to its currently displayed values. The Document column also supports separator autosizing.
+Columns fit their headings and data when a profile is loaded. Added or edited values can widen a column. Double-click the separator at the right edge of a heading to fit that column to its currently displayed values. The Document column also supports separator autosizing. In Dark Mode, headings retain readable colors when hovered or pressed; switching back to Light Mode restores the original appearance.
 
 SUPPORTING DOCUMENTS
 

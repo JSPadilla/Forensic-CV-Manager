@@ -162,7 +162,7 @@ Run the test suite from the repository folder:
 python -m unittest discover -s tests -v
 ```
 
-The GUI regression tests require Tk and a display. On Linux without a desktop, use `xvfb-run -a python -m unittest discover -s tests -v` with Xvfb installed. GitHub Actions runs these checks for main, feature branches, and pull requests to main.
+The GUI regression tests require Tk and a display. On Linux without a desktop, use `xvfb-run -a python -m unittest discover -s tests -v` with Xvfb installed. GitHub Actions runs these checks for pushes to main and pull requests to main; they can also be started manually. Feature pushes do not create duplicate runs. See [.github/ACTIONS_STORAGE_POLICY.md](.github/ACTIONS_STORAGE_POLICY.md) for the repository's development-artifact and release policy.
 
 To measure refreshes and sorting with synthetic records and documents:
 
