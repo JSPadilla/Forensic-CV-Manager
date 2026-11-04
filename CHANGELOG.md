@@ -6,6 +6,14 @@ The project uses Semantic Versioning (`MAJOR.MINOR.PATCH`) beginning with the 2.
 
 ---
 
+## Unreleased
+
+### Fixed
+
+- Apply the active appearance mode when opening Add/Edit record dialogs, including the dialog background, multiline fields, attachment lists, selection colors, and combobox dropdowns.
+- Keep already-open dialogs consistent when changing between Light and Dark modes, including nested profile dialogs and document viewers.
+- Add real-Tk regression coverage for all nine record categories, mode changes, nested dialogs, attachment selection, and saving edited values.
+
 ## 2.5.1 — 2026-10-14
 
 ### Performance and reliability

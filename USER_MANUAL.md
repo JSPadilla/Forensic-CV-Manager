@@ -63,6 +63,8 @@ Because document attachments are stored inside `data/forensic_cv.sqlite3`, backi
 
 Use **Tools > Appearance > Light Mode** or **Dark Mode**. The choice is stored in the portable `data` folder and restored on the next launch. Light mode intentionally retains the v2.2.0 Windows-style interface.
 
+Add/Edit record dialogs use the selected appearance mode for notes, attachment lists, and dropdowns as well as the dialog background. Changing the appearance also updates dialogs that are already open.
+
 ## PDF Preview
 
 On **Generate CV**, select **Preview & Save PDF**. A temporary native PDF opens in the integrated viewer. Use Previous/Next, Zoom, or Fit Width to review it. Select **Save PDF** to write the approved copy to the portable `Resume` folder or another chosen location. Closing the preview without saving does not create a resume file.

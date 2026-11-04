@@ -10,6 +10,58 @@ import pymupdf
 from PIL import Image, ImageTk
 
 
+def apply_widget_theme(widget, theme_name: str | None = None):
+    """Theme native widgets, including dialogs created after a theme switch.
+
+    ttk controls inherit the application's styles. Native Tk controls and
+    combobox popups need their colors set explicitly.
+    """
+    root = widget
+    while root.master is not None:
+        root = root.master
+    if theme_name is None:
+        theme_name = getattr(root, "theme_name", "light")
+    dark = theme_name == "dark"
+    background = "#202225" if dark else "#f0f0f0"
+    field = "#313338" if dark else "#ffffff"
+    foreground = "#f2f3f5" if dark else "#000000"
+    selected = "#3d6382" if dark else "#0078d7"
+    canvas = "#2b2d31" if dark else "#ffffff"
+
+    def walk(current):
+        if isinstance(current, (tk.Tk, tk.Toplevel)):
+            current.configure(background=background)
+        elif isinstance(current, tk.Text):
+            current.configure(
+                background=field, foreground=foreground,
+                insertbackground=foreground, selectbackground=selected,
+                selectforeground="#ffffff", highlightbackground=background,
+            )
+        elif isinstance(current, tk.Listbox):
+            current.configure(
+                background=field, foreground=foreground,
+                selectbackground=selected, selectforeground="#ffffff",
+                highlightbackground=background,
+            )
+        elif isinstance(current, tk.Canvas):
+            current.configure(background=canvas)
+        elif isinstance(current, ttk.Combobox):
+            # The dropdown list is a Tcl-created Listbox outside winfo_children.
+            try:
+                popup = current.tk.call("ttk::combobox::PopdownWindow", current)
+                current.tk.call(
+                    str(popup) + ".f.l", "configure",
+                    "-background", field, "-foreground", foreground,
+                    "-selectbackground", selected, "-selectforeground", "#ffffff",
+                )
+            except tk.TclError:
+                pass  # Some native platform themes do not expose a Tk listbox.
+        for child in current.winfo_children():
+            walk(child)
+
+    walk(widget)
+
+
 def resource_path(relative: str) -> Path:
     import sys
     base = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
@@ -104,6 +156,7 @@ class PdfPreviewWindow(tk.Toplevel):
         body.rowconfigure(0,weight=1); body.columnconfigure(0,weight=1)
         self.canvas.bind('<Configure>', lambda e: self._render())
         self.protocol('WM_DELETE_WINDOW', self.close)
+        apply_widget_theme(self)
         self.after(40, self._render)
 
     def _render(self):
