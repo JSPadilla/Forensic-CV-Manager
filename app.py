@@ -646,38 +646,63 @@ class App(tk.Tk):
         except tk.TclError:
             pass
         style.configure("Treeview", rowheight=26)
+        style.configure("Document.Treeview", rowheight=34)
         style.configure("Treeview.Heading", font=("Segoe UI", 9, "bold"))
         style.configure("Title.TLabel", font=("Segoe UI", 18, "bold"))
         style.configure("Metric.TLabel", font=("Segoe UI", 20, "bold"), foreground="#1f4e79")
 
     def _apply_dark_ttk_style(self):
         style = self.style
-        try:
-            style.theme_use("clam")
-        except tk.TclError:
-            pass
+        # Keep overrides out of the built-in light theme, including state maps.
+        if "forensic-dark" not in style.theme_names():
+            style.theme_create("forensic-dark", parent="clam")
+        style.theme_use("forensic-dark")
         bg = "#202225"
         panel = "#2b2d31"
         field = "#313338"
         fg = "#f2f3f5"
         muted = "#b5bac1"
         accent = "#6ea8d7"
+        hover = "#3a3d42"
+        selected = "#3d6382"
         self.configure(bg=bg)
         style.configure(".", background=bg, foreground=fg, fieldbackground=field)
+        style.map(".", background=[("disabled", bg), ("pressed", field), ("active", hover)],
+                  foreground=[("disabled", muted)])
         style.configure("TFrame", background=bg)
         style.configure("TLabel", background=bg, foreground=fg)
         style.configure("TLabelframe", background=bg, foreground=fg)
         style.configure("TLabelframe.Label", background=bg, foreground=fg)
         style.configure("TButton", background=panel, foreground=fg, padding=(8, 4))
-        style.map("TButton", background=[("active", "#3a3d42")])
+        style.map("TButton", background=[("disabled", panel), ("pressed", selected), ("active", hover)],
+                  foreground=[("disabled", muted), ("pressed", fg), ("active", fg)])
+        for control in ("TCheckbutton", "TRadiobutton"):
+            style.configure(control, background=bg, foreground=fg)
+            style.map(control, background=[("disabled", bg), ("active", hover)],
+                      foreground=[("disabled", muted), ("active", fg)],
+                      indicatorbackground=[("disabled", panel), ("pressed", hover)])
         style.configure("TEntry", fieldbackground=field, foreground=fg)
+        style.map("TEntry", background=[("disabled", panel), ("readonly", field)],
+                  fieldbackground=[("disabled", panel), ("readonly", field)],
+                  foreground=[("disabled", muted), ("readonly", fg)])
         style.configure("TCombobox", fieldbackground=field, foreground=fg, background=field)
-        style.map("TCombobox", fieldbackground=[("readonly", field)], foreground=[("readonly", fg)])
+        style.map("TCombobox", background=[("disabled", panel), ("pressed", selected), ("active", hover), ("readonly", field)],
+                  fieldbackground=[("disabled", panel), ("readonly", field)],
+                  foreground=[("disabled", muted), ("readonly", fg)],
+                  arrowcolor=[("disabled", muted), ("!disabled", fg)])
         style.configure("TNotebook", background=bg, borderwidth=0)
         style.configure("TNotebook.Tab", background=panel, foreground=muted, padding=(10, 5))
-        style.map("TNotebook.Tab", background=[("selected", field)], foreground=[("selected", fg)])
+        style.map("TNotebook.Tab", background=[("disabled", panel), ("selected", field), ("active", hover)],
+                  foreground=[("disabled", muted), ("selected", fg), ("active", fg)],
+                  lightcolor=[("selected", field), ("active", hover)])
         style.configure("Treeview", rowheight=26, background=field, fieldbackground=field, foreground=fg)
+        style.configure("Document.Treeview", rowheight=34)
         style.configure("Treeview.Heading", background=panel, foreground=fg, font=("Segoe UI", 9, "bold"))
+        style.map("Treeview.Heading", background=[("disabled", panel), ("pressed", selected), ("active", hover)],
+                  foreground=[("disabled", muted), ("pressed", fg), ("active", fg)])
+        style.configure("TScrollbar", background=panel, troughcolor=bg, arrowcolor=fg)
+        style.map("TScrollbar", background=[("disabled", panel), ("pressed", selected), ("active", hover)],
+                  arrowcolor=[("disabled", muted), ("!disabled", fg)])
         style.map("Treeview", background=[("selected", "#3d6382")], foreground=[("selected", "#ffffff")])
         style.configure("Title.TLabel", font=("Segoe UI", 18, "bold"), background=bg, foreground=fg)
         style.configure("Metric.TLabel", font=("Segoe UI", 20, "bold"), background=bg, foreground=accent)

@@ -6,10 +6,12 @@ The project uses Semantic Versioning (`MAJOR.MINOR.PATCH`) beginning with the 2.
 
 ---
 
-## Unreleased
+## 2.5.2 — Unreleased
 
 ### Fixed
 
+- Keep table headings readable in Dark Mode when hovered or pressed, including the Document heading. Apply consistent interaction colors to checkboxes, radio buttons, dropdowns, notebook tabs, and scrollbars.
+- Isolate Dark Mode styles from the built-in light theme so returning to Light Mode restores its original interaction colors. Preserve compact document rows in both modes.
 - Apply the active appearance mode when opening Add/Edit record dialogs, including the dialog background, multiline fields, attachment lists, selection colors, and combobox dropdowns.
 - Keep already-open dialogs consistent when changing between Light and Dark modes, including nested profile dialogs and document viewers.
 - Add real-Tk regression coverage for all nine record categories, mode changes, nested dialogs, attachment selection, and saving edited values.
@@ -288,6 +290,7 @@ The following repository-level changes are not tied to a specific application fe
 
 | Version | Primary focus |
 | --- | --- |
+| 2.5.2 | Consistent dark-mode dialogs, readable hover and pressed states, clean light-mode restoration |
 | 2.5.1 | Faster record refresh and sorting, thumbnail caching, automatic dashboard updates, PDF preview compatibility |
 | 2.5.0 | Supporting-document attachments, previews, ZIP export, list autosizing, update-checker repair |
 | 2.4.0 | Sortable record columns |

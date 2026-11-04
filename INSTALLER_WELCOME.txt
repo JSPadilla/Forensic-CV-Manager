@@ -1,9 +1,9 @@
-Welcome to Forensic CV Manager 2.5.1
+Welcome to Forensic CV Manager 2.5.2
 
 Forensic CV Manager is a portable professional portfolio application for tracking training, education, employment, certifications, teaching, courtroom testimony, skills, and achievements.
 
 The installer creates the application folder, a writable local database, Resume output folder, Backups folder, user manual, and sanitized demonstration data.
 
-Version 2.5.1 improves record refresh and sorting performance, reuses compact document previews, and updates dashboard totals automatically after record changes. Double-click a column separator to fit its width to the displayed content. Existing databases and supporting documents remain compatible.
+Version 2.5.2 makes Dark Mode consistent across record dialogs and keeps table headings readable when hovered or pressed. It retains fast record refreshes, compact document previews, and automatic dashboard updates. Double-click a column separator to fit its width to the displayed content. Existing databases and supporting documents remain compatible.
 
 For organizations using managed Windows workstations, review local software-installation and code-signing policies before deployment.

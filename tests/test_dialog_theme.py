@@ -1,5 +1,6 @@
 """Real Tk regressions for dialogs opened after selecting an appearance mode."""
 import tempfile
+import sys
 import tkinter as tk
 import unittest
 from pathlib import Path
@@ -122,6 +123,61 @@ class DialogThemeTests(unittest.TestCase):
         self.assertEqual(dialog.result["hours"], 8.0)
         self.assertEqual(dialog.result["notes"], "Edited")
         self.assertIsNotNone(self.db.conn.execute("SELECT id FROM attachments WHERE id=?", (attachment,)).fetchone())
+
+    def test_dark_interaction_states_have_readable_text(self):
+        def luminance(color):
+            components = [value / 65535 for value in self.app.winfo_rgb(color)]
+            linear = [value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4 for value in components]
+            return sum(value * weight for value, weight in zip(linear, (0.2126, 0.7152, 0.0722)))
+
+        for name in ("Treeview.Heading", "Document.Treeview.Heading", "TButton",
+                     "TCheckbutton", "TRadiobutton", "TCombobox", "TNotebook.Tab"):
+            for state in ((), ("active",), ("pressed",), ("active", "pressed")):
+                with self.subTest(style=name, state=state):
+                    bg = luminance(self.app.style.lookup(name, "background", state))
+                    fg = luminance(self.app.style.lookup(name, "foreground", state))
+                    contrast = (max(bg, fg) + 0.05) / (min(bg, fg) + 0.05)
+                    self.assertGreaterEqual(contrast, 4.5)
+                    self.assertLess(bg, 0.15, "Dark-mode interaction backgrounds must stay dark")
+
+    def test_light_theme_state_colors_are_restored_after_dark_mode(self):
+        style = self.app.style
+        light = "vista" if sys.platform.startswith("win") and "vista" in style.theme_names() else "clam"
+        styles = ("Treeview.Heading", "Document.Treeview.Heading", "TCheckbutton", "TCombobox")
+        states = ((), ("active",), ("pressed",))
+        style.theme_use(light)
+        expected = {(name, state, option): style.lookup(name, option, state)
+                    for name in styles for state in states for option in ("background", "foreground")}
+        for _ in range(2):
+            with patch("app.save_theme_preference"):
+                self.app.set_theme("dark")
+                self.app.set_theme("light")
+            self.assertEqual(style.theme_use(), light)
+            for (name, state, option), value in expected.items():
+                with self.subTest(style=name, state=state, option=option):
+                    self.assertEqual(style.lookup(name, option, state), value)
+            self.assertEqual(int(style.lookup("Document.Treeview", "rowheight")), 34)
+
+    def test_disabled_controls_and_compact_rows_survive_theme_changes(self):
+        for mode in ("light", "dark", "light", "dark"):
+            with patch("app.save_theme_preference"):
+                self.app.set_theme(mode)
+            self.assertEqual(int(self.app.style.lookup("Document.Treeview", "rowheight")), 34)
+            if mode == "dark":
+                for name in ("TButton", "TEntry", "TCombobox", "Treeview.Heading"):
+                    self.assertEqual(self.app.style.lookup(name, "foreground", ("disabled",)), "#b5bac1")
+
+    def test_release_metadata_matches_application_version(self):
+        from app_config import APP_VERSION
+        from version import __version__
+
+        root = Path(__file__).resolve().parents[1]
+        self.assertEqual(APP_VERSION, __version__)
+        self.assertIn(f'MyAppVersion "{__version__}"', (root / "installer_version.iss").read_text())
+        metadata = (root / "version_info.txt").read_text()
+        quad = ", ".join(__version__.split(".") + ["0"])
+        self.assertIn(f"filevers=({quad})", metadata)
+        self.assertIn(f"prodvers=({quad})", metadata)
 
 
 if __name__ == "__main__":

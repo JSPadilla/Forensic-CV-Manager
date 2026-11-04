@@ -1,4 +1,4 @@
-# Forensic CV Manager 2.5.1 User Manual
+# Forensic CV Manager 2.5.2 User Manual
 
 ## Adding records
 
@@ -65,6 +65,8 @@ Use **Tools > Appearance > Light Mode** or **Dark Mode**. The choice is stored i
 
 Add/Edit record dialogs use the selected appearance mode for notes, attachment lists, and dropdowns as well as the dialog background. Changing the appearance also updates dialogs that are already open.
 
+In Dark Mode, table headings and other controls retain readable text when the pointer hovers over them or they are pressed. Switching back to Light Mode restores its original appearance.
+
 ## PDF Preview
 
 On **Generate CV**, select **Preview & Save PDF**. A temporary native PDF opens in the integrated viewer. Use Previous/Next, Zoom, or Fit Width to review it. Select **Save PDF** to write the approved copy to the portable `Resume` folder or another chosen location. Closing the preview without saving does not create a resume file.
@@ -77,4 +79,4 @@ Sorting keeps the selected record and column widths. Columns automatically fit t
 
 ## Updating from an earlier version
 
-Version 2.5.1 uses the existing SQLite record and attachment schema. No manual data conversion is needed. Keep a database backup before replacing the application, and retain your existing working database and portable folders.
+Version 2.5.2 uses the existing SQLite record and attachment schema. No manual data conversion is needed. Keep a database backup before replacing the application, and retain your existing working database and portable folders.
